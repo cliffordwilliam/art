@@ -4,14 +4,22 @@ const jwt = require("jsonwebtoken")
 
 class Helper {
     static throwCustomError(message, status) {
-        throw({name:"CustomError",message,status}) 
+        throw({name:"CustomError", message, status}) 
+    }
+    
+    static bodyCheck(reqBody) {
+        for (const key of Object.keys(reqBody)) {
+            if (!reqBody[key]) {
+                Helper.throwCustomError(`${key} is required`, 400)
+            }
+        }
     }
 
     static async hashPassword(value){
         try {
             return await bcrypt.hash(value, 10)
         } catch (error) {
-            next(error)
+            throw error
         }
     }
 
@@ -19,16 +27,16 @@ class Helper {
         try {
             return await bcrypt.compare(receivedPassword, databasePassword)
         } catch (error) {
-            next(error)
+            throw error
         }
     }
 
     static payloadToToken(payload){
-        return jwt.sign(payload,process.env.SECRET_KEY)
+        return jwt.sign(payload, process.env.SECRET_KEY)
     }
 
     static tokenToPayload(token){
-        return jwt.verify(token,process.env.SECRET_KEY)
+        return jwt.verify(token, process.env.SECRET_KEY)
     }
 
     static async findById(model, id){
@@ -37,12 +45,13 @@ class Helper {
             if (!obj) Helper.throwCustomError(`object with id:${id} does not exist`, 404)
             return obj
         } catch (error) {
-            next(error)
+            throw error
         }
     }
     
-    static async findBywhere(model, where, isCheckingPayload){
+    static async findByWhere(model, where, isCheckingPayload){
         try {
+            // where = {authorId: 2}
             const obj = await model.findOne({where})
             if (!obj) { // comparing payload data with db? err is unauthorized
                 if (isCheckingPayload) Helper.throwCustomError("unauthorized", 401)
@@ -50,7 +59,7 @@ class Helper {
             }
             return obj
         } catch (error) {
-            next(error)
+            throw error
         }
     }
 }
